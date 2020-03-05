@@ -24,7 +24,7 @@ Things to figure out:
 
 
 Goals of this: 
-    -learn to write in python - learn to create/manage a database, establish 0 need to spent time doing manual recon.
+    -learn to write in python - learn to create/manage a database, establish 0 need to spent time doing manual recon. Use git and update as I code.
 
     -Re-Run tools twice a week
         -Output found changes to text file? table? How to distinguish changes?
