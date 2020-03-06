@@ -32,3 +32,14 @@ Goals of this:
     -Uses of this database:
         -have massive dataset from which you can be the first to exploit CVEs. 
         -See company specific architecture patterns
+
+
+
+control flow:           1. run amass, append to potential_subdomains.txt    
+                        2. run commonspeak2, append to potential_subdomains.txt
+                        3. run fdns-enum, append to potential_subdomains.txt
+                        4. run massdns on potential_subdomains.txt, output alive_sub_domains.txt
+                        5. run altdns on alive_sub_domains.txt output altdns_potential_subdomains.txt
+                        6. run massdns on altdns_potential_subdomains, append to alive_sub_domains.txt 
+                        7. 
+                        8. enumeration finished.
