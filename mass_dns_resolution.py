@@ -1,7 +1,7 @@
 import os 
 
 def awk_sed_sort():
-    os.system("cat hosts_online_unsorted | awk '{print $1}' | sed 's/.$//' | sort -u > hosts_online.txt")
+    os.system("cat hosts_online_unsorted.txt | awk '{print $1}' | sed 's/.$//' | sort -u > hosts_online.txt")
 
 def exec_massdns():
     RESOLVERS_PATH = "resolvers.txt"

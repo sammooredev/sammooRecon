@@ -35,11 +35,14 @@ Goals of this:
 
 
 
-control flow:           1. run amass, append to potential_subdomains.txt    
-                        2. run commonspeak2, append to potential_subdomains.txt
-                        3. run fdns-enum, append to potential_subdomains.txt
-                        4. run massdns on potential_subdomains.txt, output alive_sub_domains.txt
-                        5. run altdns on alive_sub_domains.txt output altdns_potential_subdomains.txt
-                        6. run massdns on altdns_potential_subdomains, append to alive_sub_domains.txt 
-                        7. 
-                        8. enumeration finished.
+control flow:          
+
+ #This is the main file, wrapping the modules. Control flow for this program is: 
+#1. run amass, append to amass_potential_subdomains.txt    
+#       - run commonspeak2, append to commonspeak2_potential_subdomains.txt
+#TO-DO: - run fdns-enum, append to fdns_potential_subdomains.txt
+#3. merge amass_potential_subdomains, commonspeak2_potential_subdomains, and fdns_potential_subdomains to one file, all_potential_subdomains.txt
+#2. run massdns on all_potential_subdomains.txt, output hosts_online_unsorted.txt, sort them, output hosts_online.txt, delete hosts_online_unsorted.txt
+#3. run altdns on hosts_online.txt output altdns_potential_subdomains.txt
+#4. run massdns on altdns_potential_subdomains, output to altdnsfound_online_unsorted.txt, sort, append to hosts_online.txt 
+#5. enumeration finished.
