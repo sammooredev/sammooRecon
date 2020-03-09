@@ -2,6 +2,25 @@ import subprocess
 import json
 import gzip
 import time
+import requests
+import glob
+from bs4 import BeautifulSoup
+
+
+def fetch_FDNS_File():
+    soup = BeautifulSoup(requests.get("https://opendata.rapid7.com/sonar.fdns_v2/").text, "lxml")
+    for x in soup.find_all('a',attrs={"rel":"nofollow"}):
+        if "any" in x["href"]:
+            return x["href"]
+
+def checkNeed():
+    newfdnsfile = fetch_FDNS_File().replace('/','')
+    print(newfdnsfile)
+    path = "*.json.gz"
+    for filename in glob.glob(path):
+        print(filename)
+
+checkNeed()
 
 def datasetParser(fdnsfile, domain):
     #unzip fdns
@@ -17,8 +36,8 @@ def datasetParser(fdnsfile, domain):
                 #data = json.loads(json_str)
     #print(data)
     print("done parsing file! ")
-    time.wait(3)
+    time.sleep(3)
     print("starting greps, and things. creating final output...")
     
 
-datasetParser('2020-02-28-1582856436-fdns_aaaa.json.gz', 'google.com')
+#datasetParser('2020-02-28-1582856436-fdns_aaaa.json.gz', 'google.com')
