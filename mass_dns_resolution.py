@@ -5,4 +5,4 @@ def awk_sed_sort():
 
 def exec_massdns():
     RESOLVERS_PATH = "resolvers.txt"
-    os.system('/home/sam/massdns/bin/massdns -s 15000 -t A -o S -r ' + RESOLVERS_PATH + ' --flush -w hosts_online_unsorted.txt all_potential_subdomains.txt')
+    os.system('/home/sam/massdns/bin/massdns -s 15000 -t A -o S -r ' + RESOLVERS_PATH + ' --flush -w /online_hosts/hosts_online_unsorted.txt /potential_subdomains/all_potential_subdomains.txt')

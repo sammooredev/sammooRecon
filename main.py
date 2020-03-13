@@ -22,14 +22,14 @@ def run_process(process):
 
 pool = Pool(processes=2)
 pool.map(run_process, processes)
-
+print("starting")
 os.system("sort -u amass_potential_subdomains.txt commonspeak2_potential_subdomains.txt > all_potential_subdomains.txt")
-time.sleep(10)
+time.sleep(1)
 
 print("\nstarting massdns resolution...\n")
 
-exec_massdns()
-time.sleep(10)
+#exec_massdns()
+time.sleep(5)
 print("DNS Resolution complete, sorting output...")
 awk_sed_sort()
 print("Subdomain Enumeration Complete! final list: hosts_online.txt")

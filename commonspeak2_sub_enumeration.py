@@ -2,7 +2,7 @@
 def CommonSpeakSubGen(domain):
     scope = str(domain)
     wordlist = open('./commonspeak2.txt').read().split('\n')
-    outputFile = open("commonspeak2_potential_subdomains.txt","a")
+    outputFile = open("potential_subdomains/commonspeak2_potential_subdomains.txt","a")
 
     for word in wordlist:
         if not word.strip():
