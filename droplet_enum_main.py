@@ -14,22 +14,14 @@ program_path = "/root/Bounty/*"
 # use to work on each domains list of each program
 path = "/root/Bounty/*/*/domains.txt"
 
-def nslookup_loop(output_path):
-    domains_for_ns = open(output_path + "/" + date + "/online_hosts/final_online_hosts/" + date + "_final_online_hosts.txt", "r") 
-    for domain in domains_for_ns:
-        fixed_domain = domain.strip()
-        print("IPs grabbed for: " + fixed_domain)
-        grepip = r"([0-9]{1,3}[\.]){3}[0-9]{1,3}"
-        foobar = '/Name:/{val=$NF;flag=1;next} /Address:/ && flag{print $NF,val;val=""}'
-        os.system('nslookup ' + fixed_domain + ' |  awk ' + "'" + foobar + "'" + ' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort -u > temp_ns_outfile.txt')
-        os.system('cat temp_ns_outfile.txt >> ' + output_path + '/' + date + '/online_hosts/' + date + '_for_masscan.txt')
-
 def fdnsParse(fdnsfile, domain, output_path):
     placeholder = '.'+domain+'"'
     placeholder2 = '.'+domain+'$'
     os.system("zcat " + fdnsfile + " | grep -F '" + placeholder + "' | jq -r .name | grep '" + placeholder2 +
               "' | sort | uniq | tee -a " + output_path + "/potential_subdomains/" + date + "_fdns_potential_subdomains.txt")
 
+def fdnsLookUp(fdnsfile, domain, output_path):
+    os.system
 
 def exec_massdns(output_path):
     RESOLVERS_PATH = "resolvers.txt"
@@ -40,19 +32,24 @@ def exec_massdns(output_path):
     # clean output to just be a domain
     os.system("cat " + output_path + "/" + date + 
               "/online_hosts/hosts_online_unsorted.txt | awk '{print $1}' | sed 's/.$//' | sort -u > " + output_path + "/" + date + "/online_hosts/" + date + "_online_hosts.txt")
+    os.system('cat ' + output_path + "/" + date + '/online_hosts/hosts_online_unsorted.txt | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort -u > ' + output_path + "/" + date + "/online_hosts/for_masscan_1.txt")
+    os.system("rm -f " + output_path + "/" + date + "/online_hosts/hosts_online_unsorted.txt")
     print(" [+] MassDNS done, creating altdns possibilites...")
 
 
 def exec_massdns_final(output_path):
     RESOLVERS_PATH = "resolvers.txt"
     os.system('/root/massdns/bin/massdns -s 15000 -t A -o S -r ' + RESOLVERS_PATH + " --flush -w " + output_path + "/" + date + 
-              "/online_hosts/" + date + "_altdns_online_unsorted_final.txt " + output_path + "/" + date + "/potential_subdomains/" + date + "_altdns_potential_subdomains.txt")
+              "/online_hosts/altdns_online_unsorted_final.txt " + output_path + "/" + date + "/potential_subdomains/" + date + "_altdns_potential_subdomains.txt")
 
-    os.system("cat " + output_path + "/" + date + "/potential_subdomains/" + date +
-              "_altdns_potential_subdomains.txt | awk '{print $1}' | sort -u > " + output_path + "/" + date + "/online_hosts/" + date + "_altdns_online_hosts.txt")
-
+    os.system("cat " + output_path + "/" + date + "/online_hosts/altdns_online_unsorted_final.txt | awk '{print $1}' | sed 's/.$//' | sort -u > " + output_path + "/" + date + "/online_hosts/" + date + "_altdns_online_hosts.txt")
+    os.system('cat ' + output_path + "/" + date + '/online_hosts/altdns_online_unsorted_final.txt | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort -u > ' + output_path + '/' + date + '/online_hosts/for_masscan_2.txt') 
+    os.system('rm -f ' + output_path + "/" + date + "/online_hosts/altdns_online_unsorted_final.txt") 
     os.system("sort -u " + output_path + "/" + date + "/online_hosts/" + date + "_online_hosts.txt " + output_path + "/" + date +  
-              "/online_hosts/" + date + "_altdns_online_unsorted_final.txt > " + output_path + "/" + date + "/online_hosts/final_online_hosts/final_online_hosts.txt")
+              "/online_hosts/" + date + "_altdns_online_hosts.txt > " + output_path + "/" + date + "/online_hosts/final_online_hosts/final_online_hosts.txt")
+    os.system("sort -u " + output_path + "/" + date + "/online_hosts/for_masscan_2.txt " + output_path + '/' + date + '/online_hosts/for_masscan_1.txt > ' + output_path + "/" + date + "/online_hosts/for_ping_scan.txt")
+    os.system("rm " + output_path + "/" + date + "/online_hosts/for_masscan_2.txt")
+    os.system("rm " + output_path + "/" + date + "/online_hosts/for_masscan_1.txt")
     print(" [+] Final MassDNS done.")
 # Generate possible subdomains with commonspeak2
 
@@ -97,7 +94,7 @@ for file in glob.glob(program_path):
         print(" [+] starting enum for: " + str(domains_file).replace(
             "home/sam/Bounty/", " == ").replace("/domains.txt", " == "))
         #[1]Run amass on each line of domains.txt
-        os.system('/snap/bin/amass enum -timeout 1 -df ' + str(domains_file) + ' | tee -a ' + file + '/' + date + '/potential_subdomains/' + date + '_amass_potential_subdomains.txt')
+        os.system('/snap/bin/amass enum -timeout 30  -df ' + str(domains_file) + ' | tee -a ' + file + '/' + date + '/potential_subdomains/' + date + '_amass_potential_subdomains.txt')
 
         #[2]generate commonspeak possibilites
         program = file
@@ -124,76 +121,69 @@ for file in glob.glob(program_path):
         exec_massdns(file)
         altDNSer(file)
         exec_massdns_final(file)
-        #ffuf 80/443 for alive domains
-        os.system('ffuf -c -w "' + file + "/" + date + '/online_hosts/final_online_hosts/final_online_hosts.txt:DOMAIN" -w /root/webports.txt -u http://DOMAIN/FUZZ -o ' + file + '/' + date + '/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json -of json')
-        with open(file + '/' + date + "/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json") as ffuzjson:
-            data = json.load(ffuzjson)
+        #ffuf non ssl alive domains
+        os.system('wc -l < ' + file + '/' + date + '/online_hosts/final_online_hosts/final_online_hosts.txt > ' + file + '/' + date + '/online_hosts/final_online_hosts/number_of_lines.txt')
+        with open(file + '/' + date + '/online_hosts/final_online_hosts/number_of_lines.txt') as f:
+            numlines = f.readline()
+            bad_resp = ['403','302']
+            if int(numlines) > 250000:
+                os.system('split -l 250000 ' + file + '/' + date + '/online_hosts/final_online_hosts/final_online_hosts.txt ' + file + '/' + date + '/online_hosts/final_online_hosts/xsplit')
+                print('spliit!') 
 
-            for key in data['results']:
-                if '403' in str(key['status']):
-                    with open(file + "/" + date + '/online_hosts/final_online_hosts/403s/403_sites.txt', 'a') as g:
-                        g.write(key['url'] + '\n')
-                else:
-                    with open(file + "/" + date + '/online_hosts/final_online_hosts/alive_sites/alive_sites.txt', 'a') as h:
-                        h.write(key['url'] + '\n')
+                for kid in glob.glob(file + "/" + date + "/online_hosts/final_online_hosts/xsplit*"):
+                    print(kid)
 
+                    os.system('ffuf -c -w "' + kid +':DOMAIN" -w /root/ffuf_blank.txt -u http://DOMAIN/FUZZ -timeout 2 -t 200 -o ' + file + '/' + date + '/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json -of json')
+                    with open(file + '/' + date + "/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json") as ffuzjson:
+                        data = json.load(ffuzjson)
 
-        #grep ips from final dns resolution
-        ip_regex = r'([0-9]{1,3}[\.]){3}[0-9]{1,3}'
-       # os.system('grep -E -o "'+ ip_regex + '" ' + file + '/' + date + '/online_hosts/final_online_hosts/final_online_hosts.txt > ' + file + '/' + date + '/online_hosts/final_online_hosts/for_ping_scan.txt')
-        #ping scan 
-        print(" [+] starting ping sweep for hosts resolved")
-       # os.system('masscan -iL ' + file + '/' + date + '/online_hosts/final_online_hosts/for_ping_scan.txt -p 0 --ping -oG ' + file + '/' + date + '/online_hosts/final_online_hosts/responded_to_ping.txt')
-        #grep ips from ping scan results
-       # os.system('grep -E -o "'+ ip_regex + '" ' + file + '/' + date + '/online_hosts/final_online_hosts/responded_to_ping.txt > ' + file + '/' + date + '/online_hosts/final_online_hosts/for_port_scan.txt')
-        #masscan all ports for ips from ping scan
-       # os.system('masscan -iL ' + file + '/' + date + '/online_hosts/final_online_hosts/for_port_scan.txt -p 1-65535 --rate 15000 -oG ' + file + '/' + date + '/online_hosts/final_online_hosts/for_masscan_output_parser.txt')
+                        for key in data['results']:
+                            if any(resp in str(key['status']) for resp in bad_resp):
+                                with open(file + "/" + date + '/online_hosts/final_online_hosts/403s/403_sites.txt', 'a') as g:
+                                    g.write(key['url'] + '\n')
+                            else:
+                                with open(file + "/" + date + '/online_hosts/final_online_hosts/alive_sites/alive_sites.txt', 'a') as h:
+                                    h.write(key['url'] + '\n')
+        #ffuf ssl alive domains                
+                    os.system('ffuf -c -w "' + kid + ':DOMAIN" -w /root/ffuf_blank.txt -u https://DOMAIN/FUZZ -timeout 2 -t 200 -o ' + file + '/' + date + '/online_hosts/final_online_hosts/ssl_alive_fuzz.json -of json')
+                    with open(file + '/' + date + "/online_hosts/final_online_hosts/ssl_alive_fuzz.json") as ffuzjson:
+                        data = json.load(ffuzjson)
 
-        print('[+] parsing masscan file, building ultra dope final file :)')
+                    for key in data['results']:
+                        if any(resp in str(key['status']) for resp in bad_resp): 
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/403s/403_sites.txt', 'a') as g:
+                                g.write(key['url'] + '\n')    
+                        else:
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/alive_sites/alive_sites.txt', 'a') as h:
+                                h.write(key['url'] + '\n')
+            else:
+                os.system('ffuf -c -w "' + file + '/' + date + '/online_hosts/final_online_hosts/final_online_hosts.txt:DOMAIN" -w /root/ffuf_blank.txt -u http://DOMAIN/FUZZ -timeout 2 -t 200 -o ' + file + '/' + date + '/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json -of json')
+                with open(file + '/' + date + "/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json") as ffuzjson:
+                    data = json.load(ffuzjson)
 
-        #remove masscan text from output
-       # os.system("tail -n +3 " + file + "/" + date + "/online_hosts/final_online_hosts/for_masscan_output_parser.txt | head -n -1 > " + file + "/" + date + "/online_hosts/final_online_hosts/massscan_parse_work_file.txt")
-       # os.system("touch " + file + "/" + date + "/online_hosts/final_online_hosts/all_servers_scanned.txt")
-       # with open(file + "/" + date + "/online_hosts/final_online_hosts/massscan_parse_work_file.txt") as f:
-        #for line of masscan output
-       #     for line in f:
-                #strip line of not needed text
-       #         line2 = line.replace('Host: ', '').replace('()',' ').replace('Ports:','').replace('/open/tcp////','').strip()
-                #grab ip, port from line in masscan output 
-       #         print(line2)
-       #         ip = line2[0:15].strip()
-       #         port = line2.replace(ip, '').strip()
-       #         ipandporttest = ip + port
-       #         print("important: " + ipandporttest)
-       #         with open(file + "/" + date + '/online_hosts/final_online_hosts/all_servers_scanned.txt', 'r+') as read_obj:
-                    # Read all lines in the file one by one
-       #             ipandport_home = str(ip + '     ' + port)
-       #             not_in = True
-       #             print("Testing: " + ip + ' ' + port)
-       #             line_number = 0
-       #             for line in read_obj:
-       #                 line_number += 1
-       #                 if ip in line:
-       #                     if port not in line:
-       #                         the_line = open(file + "/" + date + '/online_hosts/final_online_hosts/all_servers_scanned.txt').readlines()
-       #                         print('         line with pair:' + str(line_number) + ' -> ' + the_line[line_number - 1])
-       #                         the_line[line_number - 1] = line.strip() + ',' + port.strip() + '\n'
-       #                         open(file + '/' + date + '/online_hosts/final_online_hosts/all_servers_scanned.txt','w+').write(''.join(the_line))
-
-                            #print('!!! ip is at line -> ' +  str(returned)) 
-       #                     not_in = False
-       #                     break
-                        #else:
-                            #print('')
-       #             if not_in == True:
-       #                 read_obj.write(ipandport_home + '\n')
-       #             else:
-       #                 print('ip was in file')
+                    for key in data['results']:
+                        if any(resp in str(key['status']) for resp in bad_resp):
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/403s/403_sites.txt', 'a') as g:
+                                g.write(key['url'] + '\n')
+                        else:
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/alive_sites/alive_sites.txt', 'a') as h:
+                                h.write(key['url'] + '\n')
 
 
 
-                    # For each line, check if line contains the string
+                os.system('ffuf -c -w "' + file + '/' + date + '/online_hosts/final_online_hosts/final_online_hosts.txt:DOMAIN" -w /root/ffuf_blank.txt -u https://DOMAIN/FUZZ -timeout 2 -t 200 -o ' + file + '/' + date + '/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json -of json')
+                with open(file + '/' + date + "/online_hosts/final_online_hosts/no_ssl_alive_fuzz.json") as ffuzjson:
+                    data = json.load(ffuzjson)
 
+                    for key in data['results']:
+                        if any(resp in str(key['status']) for resp in bad_resp):
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/403s/403_sites.txt', 'a') as g:
+                                g.write(key['url'] + '\n')
+                        else:
+                            with open(file + "/" + date + '/online_hosts/final_online_hosts/alive_sites/alive_sites.txt', 'a') as h:
+                                h.write(key['url'] + '\n')
 
-        #seperate hosts with port 80/443 into /web-servers/, /other-servers/
+        os.system('rm ' + file + '/' + date + '/online_hosts/final_online_hosts/xsplit*')
+        os.system('rm ' + file + '/' + date + '/potential_subdomains/*potential_subdomains.txt')
+        os.system('rm '+ file + '/' + date + '/online_hosts/*online_hosts.txt')
         print(" [+] enumeration complete for: " + file)
