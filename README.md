@@ -2,10 +2,12 @@
 Recon Automation
 
 droplet_enum_main.py & droplet_attack_main.py
-a mess of python I *used* to use for bug bounty recon. Would be very hard to run on anyones computer but my own :) lol.
+
+  a mess of python I *used* to use for bug bounty recon. Would be very hard to run on anyones computer but my own :) lol.
 
 OpenRedirector2 - again, good luck
-A script that:
+
+  A script that:
 
   1. takes in a list of urls
   2. appends common open-redirect payloads to the url -> adds to testing list
